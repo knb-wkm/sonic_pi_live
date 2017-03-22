@@ -1,11 +1,5 @@
 #+STARTUP: indent inlineimages fninline
-#+TITLE: 鈴木商店がsonic-piでライブコーディングするぞ
-
-* 自己紹介
-
-鈴木商店 若山(通称: チビ太)
-職種 プログラマ, コーヒー, ライブコーディング
-好きな言語 ruby clojure
+#+TITLE: sonic-piでライブコーディングするぞ
 
 * 今日やること
 sonic piを利用してemacsをシンセサイザー、シーケンサーにする
