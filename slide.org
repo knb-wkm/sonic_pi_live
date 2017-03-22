@@ -1,0 +1,189 @@
+#+STARTUP: indent inlineimages fninline
+#+TITLE: 鈴木商店がsonic-piでライブコーディングするぞ
+
+* 自己紹介
+
+鈴木商店 若山(通称: チビ太)
+職種 プログラマ, コーヒー, ライブコーディング
+好きな言語 ruby clojure
+
+* 今日やること
+sonic piを利用してemacsをシンセサイザー、シーケンサーにする
+
+* sonic piって？
+rubyライク？なスクリプトで楽曲を作成、演奏できるオープンソースのプログラミング環境
+ラズパイにプリインストールされている(らしい)
+基盤にはSuperCollider(OSC), Overtone(synth)が利用されている
+
+* どういうのかは実際に見たほうが早い
+
+* hello world
+ライブコーディング用のディレクトリを掘ってファイルを作成
+
+#+begin_src shell
+$ mkdir sonic_pi_live
+$ touch sonic_pi_live/foo.rb
+#+end_src
+
+ファイルを開いてeval(評価)する
+#+begin_src ruby
+play 70  # C-c C-k (sonic-pi-bufferなんちゃら)
+#+end_src
+
+* sleepで音符を並べる
+
+#+begin_src ruby
+play 70
+sleep 1
+play 70
+#+end_src
+
+* loopする
+rubyと一緒でtimesでループできる
+
+#+begin_src ruby
+2.times do
+  play 70
+  sleep 1
+  play 70
+  sleep 1
+end
+#+end_src
+
+勿論, loop, eachも使える
+#+begin_src ruby
+loop do
+  # do play!!
+  # 無限ループになるのでsonic-pi-stop-allで停止する
+end
+
+(70..72).each do |i|
+  # do play!!
+end
+#+end_src
+
+* midi noteで音階を表現する
+音階を表現するのにmidi noteを使ったほうが直感的
+|-------+-------+-------+---------+-------+-------+-------|
+| C(ド) | D(レ) | E(ミ) | F(ファ) | G(ソ) | A(ラ) | B(シ) |
+|-------+-------+-------+---------+-------+-------+-------|
+|    60 |    62 |    64 |      65 |    67 |    69 |    71 |
+|-------+-------+-------+---------+-------+-------+-------|
+
+#+begin_src ruby
+2.times do
+  sleep 0.5
+  play :c4
+  sleep 0.5
+  play :e4
+  sleep 0.5
+  play :f4
+  sleep 0.5
+  play :g4
+  sleep 2
+end
+#+end_src
+
+* defineでパターンを定義
+音のパターンを定義する
+
+#+begin_src ruby
+define :midi_note_sample do
+  sleep 0.5
+  play :c4
+  sleep 0.5
+  play :e4
+  sleep 0.5
+  play :f4
+  sleep 0.5
+  play :g4
+  sleep 2
+end
+
+2.times do
+  midi_note_sample
+end
+#+end_src
+
+* ドラムパターンを作る
+
+#+begin_src ruby
+define :kick_pattern do
+  sample :drum_heavy_kick
+  sleep 1
+  sample :drum_snare_hard
+  sleep 1
+end
+
+define :hat_pattern do
+  sample :drum_cymbal_closed
+  sleep 0.25
+  sample :drum_cymbal_pedal
+  sleep 0.25
+end
+#+end_src
+
+* in_threadを使って並行に再生する
+
+#+begin_src ruby
+in_thread do
+  loop do
+    kick_pattern
+  end
+end
+
+in_thread do
+  loop do
+    hat_pattern
+  end
+end
+
+in_thread do
+  loop do
+    midi_note_sample
+  end
+end
+#+end_src
+
+* せっかくのプログラムなので乱数を使う
+
+one_inが便利(1/6)
+
+#+begin_src ruby
+define :midi_note_sample do
+  one_in(6) ? use_transpose(2) : use_transpose(0)
+  # patterns
+end
+#+end_src
+
+* 音色, 音階をランダムに変化させる
+use_synthで音源を選択できる
+
+one_in
+#+begin_src ruby
+define :midi_note_sample do
+  one_in(6) ? use_transpose(2) : use_transpose(0)
+  one_in(6) ? use_synth(:tb303) : use_synth(:prophet)
+  # ...
+end
+#+end_src
+
+ruby組み込みのsampleの場合
+#+begin_src ruby
+define :midi_note_sample do
+  use_transpose (0..10).to_a.sample
+  use_synth [:hollow, :pretty_bell, :chiplead, :chipbass].sample
+  ...
+end
+#+end_src
+
+* 裏の仕組み
+SuperColliderServer: OSCパケットを受けて音を再生するサーバ
+Overtone: 波形(synth)のバイナリを作成するclojureのライブラリ
+sonic pi: OSCプロトコルで音声ファイルやsynthをSuperColliderにudpする
+
+* overtoneで波形を作成してみるデモ
+overtoneでdefsynthしてコンパイル -> sonic piで呼び出し。
+時間があれば...
+
+
